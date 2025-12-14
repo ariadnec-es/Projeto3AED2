@@ -45,7 +45,7 @@ A metodologia de coleta e análise consistiu em quatro etapas principais:
   Remoção de *self-loops* e fusão de nós duplicados (singular/plural).
 
 - **Cálculo de Métricas:**
-   Degree, Betweenness, Closeness, Eigenvector e decomposição K-Core.
+   Degree, Betweenness, Closeness e decomposição K-Core.
   
 - **Diversidade Temática:**
    O uso de sementes variadas garante que a rede não fique enviesada em um único assunto, permitindo a detecção de comunidades distintas.
@@ -169,53 +169,49 @@ Calculamos métricas fundamentais de redes complexas e as salvamos como atributo
 
 Foram calculadas métricas de centralidade para identificar a relevância estrutural dos nós:
 
-* **Degree Centrality**
-* **Betweenness Centrality**
-* **Closeness Centrality**
-* **Eigenvector Centrality**
-* **K-Core Decomposition**
+* **Degree Centrality** - Indica popularidade imediata
+* **Betweenness Centrality** -  Revela "pontes" ou gargalos de informação. O parâmetro k=100 é usado porque calcular caminhos mínimos entre todos os pares de 8.000 nós é extremamente lento ($O(N^3)$ ou O(NM)); a amostragem acelera o processo com perda mínima de precisão.
+* **Closeness Centrality** - Mede a eficiência de difusão. Nós com alto valor conseguem alcançar (ou serem alcançados por) toda a rede com o menor número de passos (cliques)
+* **K-Core Decomposition** - Remove as "camadas de cebola" externas da rede para encontrar o núcleo denso e auto-sustentável de conhecimento .
 
 ```python
+# Cálculo e Atribuição de Métricas
+
+# Degree (Grau): Popularidade simples
 degree_dict = dict(g.degree())
 nx.set_node_attributes(g, degree_dict, 'degree')
 
-bet_cent = nx.betweenness_centrality(g, k=100)
+# Betweenness (Intermediação): Importância como ponte
+# k=100 usa apenas 100 nós pivô para estimar, acelerando o cálculo
+bet_cent = nx.betweenness_centrality(g, k=100) 
 nx.set_node_attributes(g, bet_cent, 'betweenness_centrality')
 
-closeness_cent = nx.closeness_centrality(g)
+# Closeness (Proximidade): Velocidade de difusão
+closeness_cent = nx.closeness_centrality(g, wf_improved=False)
 nx.set_node_attributes(g, closeness_cent, 'closeness_centrality')
 
-eigen_cent = nx.eigenvector_centrality(g)
-nx.set_node_attributes(g, eigen_cent, 'eigenvector_centrality')
-
+# Exportação final para visualização externa
 nx.write_graphml(g, "wikipedia_network_updated_metrics.graphml")
 ```
-
-### 5.1 Destaques da Análise
-
-O grafo final contém aproximadamente:
-
-* **8.858 nós**
-* **10.596 arestas**
-
-Os resultados confirmam a estrutura de **Mundo Pequeno** da Wikipedia, com identificação clara de *hubs* globais e de comunidades temáticas.
-
-### 5.2 Visualização (Gephi)
-
-Recomenda-se o uso dos layouts:
-
-* **Force Atlas 2**
-* **Fruchterman-Reingold**
-
-Os atributos exportados permitem análise visual de centralidade, modularidade, e K-Core.
-
 ---
 
-## 6. Conclusão
+## 6. Destaques da Análise
 
-A heurística de amostragem limitada mostrou-se eficaz para controlar o crescimento exponencial da rede, permitindo a construção de um grafo representativo e computacionalmente viável.
+A análise da rede gerada revelou insights importantes sobre a topologia do conhecimento na Wikipedia. Abaixo detalhamos os principais achados quantitativos e qualitativos:
 
-As métricas de **Betweenness** e **Eigenvector Centrality** foram essenciais para identificar nós estruturalmente relevantes. A integração com o **Gephi** validou visualmente a formação de comunidades e interconexões entre áreas distintas do conhecimento.
+Após os processos de limpeza e fusão de nós duplicados, a rede final consolidou-se com **8.858 nós** e **10.596 arestas**.
+    
+* **Identificação de Hubs e Comunidades:**
+    * **Hubs Globais:** Tópicos como *"World War II"* e *"Artificial Intelligence"* comportaram-se como grandes hubs, apresentando um alto grau de entrada (*In-Degree*). Isso reflete a natureza desses assuntos: eventos globais e tecnologias transversais que tocam diversas outras áreas (política, geografia, ética, engenharia).
+      
+    * **Comunidades Coesas:** O tópico *"Renaissance Art"* formou clusters mais densos e fechados. A análise visual e métrica indicou uma forte interconexão entre artistas, obras e locais geográficos específicos (como Itália e Flandres), criando uma "comunidade" temática bem definida dentro do grafo maior.
+
+* A análise topológica confirmou que a Wikipedia possui características de redes de mundo pequeno (*Small-World Networks*). Apesar de cobrir domínios vastamente diferentes (Física Quântica a Arte Renascentista), o diâmetro da rede é relativamente curto, significando que é possível navegar de um tópico a outro com poucos cliques através dos hubs conectores.
+
+### 6.1 Conclusão
+
+Através da heurística de amostragem limitada, foi possível coletar uma rede representativa da Wikipedia partindo de 5 domínios distintos. A análise preliminar das métricas indica a presença de *hubs* conectores e uma estrutura de comunidades bem definida, que será explorada visualmente nas imagens geradas pelo Gephi e apresentadas no relatório final em vídeo.
+
 ---
 
 ## 7. Resultados e Discussão Visual
