@@ -247,23 +247,30 @@ Foram calculadas métricas de centralidade para identificar a relevância estrut
 * **K-Core Decomposition** - Remove as "camadas de cebola" externas da rede para encontrar o núcleo denso e auto-sustentável de conhecimento .
 
 ```python
-# Cálculo e Atribuição de Métricas
+# Análise de Métricas
+print("Calculando métricas...")
 
-# Degree (Grau): Popularidade simples
+# Degree
 degree_dict = dict(g.degree())
 nx.set_node_attributes(g, degree_dict, 'degree')
 
-# Betweenness (Intermediação): Importância como ponte
-# k=100 usa apenas 100 nós pivô para estimar, acelerando o cálculo
-bet_cent = nx.betweenness_centrality(g, k=100) 
+print("Calculando Degree Centrality...")
+deg_cent = nx.degree_centrality(g)
+nx.set_node_attributes(g, deg_cent, 'degree_centrality')
+
+# Betweenness
+print("Calculando Betweenness Centrality (pode demorar)...")
+bet_cent = nx.betweenness_centrality(g, k=100) # k=100 aproxima o cálculo para ser mais rápido
 nx.set_node_attributes(g, bet_cent, 'betweenness_centrality')
 
-# Closeness (Proximidade): Velocidade de difusão
-closeness_cent = nx.closeness_centrality(g, wf_improved=False)
-nx.set_node_attributes(g, closeness_cent, 'closeness_centrality')
+# K-Core e K-Shell
+print("Calculando Core Number...")
+g_undirected = g.to_undirected()
+g_undirected.remove_edges_from(nx.selfloop_edges(g_undirected)) # garante limpeza
+core_numbers = nx.core_number(g_undirected)
+nx.set_node_attributes(g, core_numbers, 'k_core')
 
-# Exportação final para visualização externa
-nx.write_graphml(g, "wikipedia_network_updated_metrics.graphml")
+print("Cálculos finalizados e atributos salvos nos nós.")
 ```
 ---
 
