@@ -284,6 +284,6 @@ As comunidades não possuem apenas conexões entre si, existem também nós que 
 
 * **Vídeo de Apresentação:** [Acesse o vídeo aqui!]()
 
-* As análises e visualizações interativas foram geradas pelo plugin **Sigma.js**, que permite explorar clusters individualmente. Disponível atravéz do link: [Wikipedia Network](https://arthurqueirozufrn.github.io/Teste-AED2/network/#)
+* As análises e visualizações interativas foram geradas pelo plugin **Sigma.js**, que permite explorar clusters individualmente. Disponível atravéz do link: [Wikipedia Network](https://ariadnec-es.github.io/AnaliseRedesComplexas/network/)
 
 ---
