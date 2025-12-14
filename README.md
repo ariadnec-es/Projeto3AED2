@@ -27,11 +27,11 @@ A análise final integra visualização avançada com o software **Gephi**, perm
 
 A base de dados foi construída dinamicamente por meio da **API da Wikipedia**. Para garantir diversidade topológica e temática, foram selecionadas cinco sementes de domínios distintos:
 
-- **Quantum Physics** – Ciência  
+- **Black hole** – Ciência Exata/Física  
 - **Renaissance Art** – História/Arte  
-- **Climate Change** – Meio Ambiente/Política  
-- **World War II** – História Global  
-- **Artificial Intelligence** – Tecnologia  
+- **Artificial intelligence** – Tecnologia/Computação  
+- **French Revolution** – Ciências Humanas/História 
+- **Existentialism** – Filosofia/Literatura  
 
 A metodologia de coleta e análise consistiu em quatro etapas principais:
 
@@ -45,7 +45,7 @@ A metodologia de coleta e análise consistiu em quatro etapas principais:
   Remoção de *self-loops* e fusão de nós duplicados (singular/plural).
 
 - **Cálculo de Métricas:**
-   Degree, Betweenness, Closeness e decomposição K-Core.
+   Degree, Betweenness e decomposição K-Core.
   
 - **Diversidade Temática:**
    O uso de sementes variadas garante que a rede não fique enviesada em um único assunto, permitindo a detecção de comunidades distintas.
@@ -53,7 +53,7 @@ A metodologia de coleta e análise consistiu em quatro etapas principais:
 
 ## 3. Configuração e Pré-processamento
 
-Definimos parâmetros iniciais para limitar a coleta de dados. Criamos uma lista de palavras de parada (*Stop Words*) e estabelecemos um limite máximo de links a serem seguidos por página (`MAX_LINKS_PER_PAGE = 50`). Escolhemos 5 sementes de domínios distintos (Ciência, Arte, Política, História, Tecnologia).
+Definimos parâmetros iniciais para limitar a coleta de dados. Criamos uma lista de palavras de parada (*Stop Words*) e estabelecemos um limite máximo de links a serem seguidos por página (`MAX_LINKS_PER_PAGE = 50`). Escolhemos 5 sementes de domínios distintos (Ciência, Arte, Filosofia, História e Tecnologia).
 
 O ambiente de desenvolvimento utilizou **Python**, com as bibliotecas:
 
@@ -75,15 +75,20 @@ MAX_LINKS_PER_PAGE = 50
 
 # Sementes Selecionadas para maximizar diversidade
 SEEDS = [
-    "Quantum Physics", "Renaissance Art", "Climate Change", 
-    "World War II", "Artificial intelligence"
+    "Black hole",               # Ciência Exata/Física (Vermelho) 0
+    "Renaissance Art",          # Arte/História/Cultura (Lilás) 2
+    "Artificial intelligence",  # Tecnologia/Computação (Laranja) 3
+    "French Revolution",        # Ciências Humanas/História (Amarelo) 5
+    "Existentialism"            # Filosofia/Literatura (Azul escuro) 12
 ]
 
 # Stop Words: Páginas estruturais que não representam conhecimento
 STOPS = set([
     "International Standard Serial Number", "International Standard Book Number",
     "National Diet Library", "International Standard Name Identifier",
-    "Pubmed Identifier", "Digital Object Identifier", "Arxiv", "Bibcode"
+    "Pubmed Identifier", "Pubmed Central", "Digital Object Identifier",
+    "Arxiv", "Proc Natl Acad Sci Usa", "Bibcode", "Jstor", "Doi (Identifier)",
+    "Isbn (Identifier)", "Pmid (Identifier)", "Wayback Machine", "Help:Authority Control"
 ])
 ````
 ---
@@ -97,41 +102,76 @@ Implementamos um algoritmo de Busca em Largura (BFS - Breadth-First Search) que 
  - Ao invés de pegar apenas os primeiros 50 links (que geralmente são alfabéticos ou de introdução), a amostragem aleatória preserva melhor a topologia global da rede, capturando conexões com tópicos variados dentro do artigo.
 
 ```python
-# Inicialização do Grafo Direcionado
+# Coleta de Dados
 g = nx.DiGraph()
-todo_lst = [(0, seed) for seed in SEEDS] # Fila de processamento
-done_set = set() # Controle de visitados
+todo_lst = []
+todo_set = set()
+done_set = set()
 
+# Inicializa a lista de tarefas com as 5 sementes (Layer 0)
+for seed in SEEDS:
+    try:
+        # Tenta validar se a página existe antes de começar
+        p = wikipedia.page(seed)
+        title = p.title
+        todo_lst.append((0, title))
+        todo_set.add(title)
+        print(f"Semente adicionada: {title}")
+    except:
+        print(f"Erro ao adicionar semente: {seed}")
+
+print("--- Iniciando Coleta (Isso pode demorar alguns minutos) ---")
+
+# Loop principal
 while todo_lst:
-    layer, page = todo_lst.pop(0) # Remove do início (Fila/BFS)
-    
-    # Critério de Parada: Não explorar além do nível 2
+    layer, page = todo_lst.pop(0) # Remove do início (BFS)
+
+    # Critério de Parada: Explorar até nível 2 (altura < 3)
+    # Se chegarmos no layer 2, não buscamos mais vizinhos, apenas adicionamos o nó.
     if layer >= 2:
         if page not in done_set:
             done_set.add(page)
         continue
 
+    # Feedback visual para o usuário não achar que travou
+    print(f"Processando [Nível {layer}]: {page}")
+
     try:
         wiki = wikipedia.page(page)
-        raw_links = wiki.links
-        
-        # Filtragem inicial com Stop Words
-        valid_links = [link for link in raw_links if link not in STOPS]
-        
-        # APLICAÇÃO DA HEURÍSTICA: Amostragem Aleatória
-        if len(valid_links) > MAX_LINKS_PER_PAGE:
-            sampled_links = random.sample(valid_links, MAX_LINKS_PER_PAGE)
-        else:
-            sampled_links = valid_links
-            
-        # Adição ao grafo e à fila
-        for link in sampled_links:
-            g.add_edge(page, link.title())
-            if link not in todo_set and link not in done_set:
-                todo_lst.append((layer + 1, link))
-                todo_set.add(link)
     except:
-        continue # Ignora erros de página não encontrada/ambígua
+        # Se der erro (página ambígua ou inexistente), pula
+        continue
+
+    done_set.add(page)
+
+    # Obtém links da página
+    raw_links = wiki.links
+
+    # --- APLICAÇÃO DA HEURÍSTICA ---
+    # Filtra links indesejados primeiro
+    valid_links = [link for link in raw_links if link not in STOPS and not link.startswith("List of")]
+
+    # Seleciona uma amostra aleatória se houver muitos links
+    if len(valid_links) > MAX_LINKS_PER_PAGE:
+        sampled_links = random.sample(valid_links, MAX_LINKS_PER_PAGE)
+    else:
+        sampled_links = valid_links
+
+    # Adiciona arestas ao grafo
+    for link in sampled_links:
+        link = link.title()
+
+        # Adiciona aresta (Página Atual -> Link Encontrado)
+        g.add_edge(page, link)
+
+        # Adiciona à fila de processamento se ainda não foi visto
+        if link not in todo_set and link not in done_set:
+            todo_lst.append((layer + 1, link))
+            todo_set.add(link)
+
+print(f"\nColeta Finalizada!")
+print(f"Total de Nós: {len(g.nodes())}")
+print(f"Total de Arestas: {len(g.edges())}")
 ```
 
 ### Limpeza e Fusão de Duplicatas
@@ -142,25 +182,57 @@ Realizamos o pós-processamento para remover self-loops (arestas de A para A) e 
  - Integridade das Métricas: Self-loops não contribuem para o fluxo de informação entre tópicos e podem inflar artificialmente certas métricas de centralidade. Sua remoção resulta em um grafo mais limpo e focado na interconectividade.
    
 ```python
-# 1. Remover Self-Loops
+# Limpeza
+print("Limpando grafo...")
+
+# 1. Remover Self-Loops (página apontando para ela mesma)
 g.remove_edges_from(nx.selfloop_edges(g))
 
-# 2. Identificar e Fundir Duplicatas (Plurais)
+# 2. Fundir plurais (Ex: 'Network' e 'Networks')
 duplicates = []
 nodes_to_check = list(g.nodes())
 
 for node in nodes_to_check:
-    # Lógica simples para detectar plurais em inglês ('s' no final)
+    # Heurística simples para encontrar plurais (ex: 'Networks' -> 'Network')
     if node.endswith('s') and len(node) > 1:
-        singular = node[:-1]
-        if g.has_node(singular):
-            duplicates.append((singular, node))
+        singular_form = node[:-1]
+        if g.has_node(singular_form) and singular_form != node: # Evita adicionar o próprio nó
+            duplicates.append((singular_form, node))
+    # Verificar para terminações 'es' como em 'Heroes' -> 'Hero'
+    elif node.endswith('es') and len(node) > 2 and node[-3] not in 'aeiou':
+        singular_form = node[:-2]
+        if g.has_node(singular_form) and singular_form != node:
+            duplicates.append((singular_form, node))
 
-# Aplicar a contração dos nós
-for u, v in duplicates:
-    if g.has_node(u) and g.has_node(v):
-        # Funde 'v' em 'u', somando suas arestas
-        nx.contracted_nodes(g, u, v, self_loops=False)
+# Adicionar uma verificação para garantir que os nós existam antes de tentar a contração
+for u_node, v_node in duplicates:
+    if g.has_node(u_node) and g.has_node(v_node):
+        # Funde v_node em u_node
+        g = nx.contracted_nodes(g, u_node, v_node, self_loops=False)
+    else:
+        print(f"Pulando contração: Um ou ambos os nós ('{u_node}', '{v_node}') não encontrados no grafo.")
+
+# Remover atributo de contração que o networkx cria
+    if 'contraction' in g.nodes[n]:
+        del g.nodes[n]['contraction']
+
+edges_to_clean = []
+for u, v, data in g.edges(data=True):
+    attrs_to_remove = []
+    for key, value in data.items():
+        if isinstance(value, dict):
+            
+            attrs_to_remove.append(key)
+    if attrs_to_remove:
+        edges_to_clean.append((u, v, attrs_to_remove))
+
+for u, v, attrs_to_remove in edges_to_clean:
+    for attr_key in attrs_to_remove:
+        # Excluir o atributo problemático dos dados da aresta
+        if attr_key in g[u][v]:
+            del g[u][v][attr_key]
+
+print(f"Grafo Limpo. Nós: {len(g.nodes())}, Arestas: {len(g.edges())}")
 ```
 ---
 
@@ -199,14 +271,14 @@ nx.write_graphml(g, "wikipedia_network_updated_metrics.graphml")
 
 A análise da rede gerada revelou insights importantes sobre a topologia do conhecimento na Wikipedia. Abaixo detalhamos os principais achados quantitativos e qualitativos:
 
-Após os processos de limpeza e fusão de nós duplicados, a rede final consolidou-se com **8.858 nós** e **10.596 arestas**.
+Após os processos de limpeza e fusão de nós duplicados, a rede final consolidou-se com **8.876 nós** e **10.634 arestas**.
     
 * **Identificação de Hubs e Comunidades:**
-    * **Hubs Globais:** Tópicos como *"World War II"* e *"Artificial Intelligence"* comportaram-se como grandes hubs, apresentando um alto grau de entrada (*In-Degree*). Isso reflete a natureza desses assuntos: eventos globais e tecnologias transversais que tocam diversas outras áreas (política, geografia, ética, engenharia).
+    * **Hubs Globais:** Tópicos como *"French Revolution"* e *"Existentialisme"* comportaram-se como grandes hubs, apresentando um alto grau de entrada (*In-Degree*). Isso reflete a natureza desses assuntos: eventos globais e tecnologias transversais que tocam diversas outras áreas (filosofia, geografia, ética, engenharia).
       
     * **Comunidades Coesas:** O tópico *"Renaissance Art"* formou clusters mais densos e fechados. A análise visual e métrica indicou uma forte interconexão entre artistas, obras e locais geográficos específicos (como Itália e Flandres), criando uma "comunidade" temática bem definida dentro do grafo maior.
 
-* A análise topológica confirmou que a Wikipedia possui características de redes de mundo pequeno (*Small-World Networks*). Apesar de cobrir domínios vastamente diferentes (Física Quântica a Arte Renascentista), o diâmetro da rede é relativamente curto, significando que é possível navegar de um tópico a outro com poucos cliques através dos hubs conectores.
+* A análise topológica confirmou que a Wikipedia possui características de redes de mundo pequeno (*Small-World Networks*). Apesar de cobrir domínios vastamente diferentes (Física a Arte Renascentista), o diâmetro da rede é relativamente curto, significando que é possível navegar de um tópico a outro com poucos cliques através dos hubs conectores.
 
 ### 6.1 Conclusão
 
