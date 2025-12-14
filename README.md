@@ -135,26 +135,37 @@ while todo_lst:
 ```
 
 ### Limpeza e Fusão de Duplicatas
+Realizamos o pós-processamento para remover self-loops (arestas de A para A) e fundir nós que representam o mesmo conceito semântico, mas com grafias ligeiramente diferentes (ex.: singular vs. plural).
 
+ - Correção Semântica: O NetworkX trata "Network" e "Networks" como dois nós diferentes. Isso dilui a importância do conceito, dividindo suas conexões. A fusão (nx.contracted_nodes) soma as arestas, consolidando a importância no nó correto .
+
+ - Integridade das Métricas: Self-loops não contribuem para o fluxo de informação entre tópicos e podem inflar artificialmente certas métricas de centralidade. Sua remoção resulta em um grafo mais limpo e focado na interconectividade.
+   
 ```python
+# 1. Remover Self-Loops
 g.remove_edges_from(nx.selfloop_edges(g))
 
+# 2. Identificar e Fundir Duplicatas (Plurais)
 duplicates = []
 nodes_to_check = list(g.nodes())
 
 for node in nodes_to_check:
+    # Lógica simples para detectar plurais em inglês ('s' no final)
     if node.endswith('s') and len(node) > 1:
         singular = node[:-1]
         if g.has_node(singular):
             duplicates.append((singular, node))
 
+# Aplicar a contração dos nós
 for u, v in duplicates:
     if g.has_node(u) and g.has_node(v):
+        # Funde 'v' em 'u', somando suas arestas
         nx.contracted_nodes(g, u, v, self_loops=False)
 ```
 ---
 
 ## 5. Análise de Métricas e Resultados
+Calculamos métricas fundamentais de redes complexas e as salvamos como atributos dos nós. Utilizamos aproximações (k=100) para algoritmos de alto custo computacional como o Betweenness.
 
 Foram calculadas métricas de centralidade para identificar a relevância estrutural dos nós:
 
@@ -205,12 +216,80 @@ Os atributos exportados permitem análise visual de centralidade, modularidade, 
 A heurística de amostragem limitada mostrou-se eficaz para controlar o crescimento exponencial da rede, permitindo a construção de um grafo representativo e computacionalmente viável.
 
 As métricas de **Betweenness** e **Eigenvector Centrality** foram essenciais para identificar nós estruturalmente relevantes. A integração com o **Gephi** validou visualmente a formação de comunidades e interconexões entre áreas distintas do conhecimento.
+---
+
+## 7. Resultados e Discussão Visual
+
+As visualizações a seguir foram geradas no software Gephi, utilizando o arquivo `.graphml` produzido na etapa anterior. As análises buscam validar a estrutura topológica da rede coletada e identificar padrões de conexão entre os diferentes temas.
+
+### 7.1 Importância e Influência (Centralidade)
+
+**Metodologia Visual:**
+* **Layout:** Force Atlas 2 (para revelar aglomerados).
+* **Tamanho dos Nós:** Proporcional ao *Degree* (Grau). Os nós maiores são mais populares.
+* **Cor dos Nós:** Mapa de calor baseado na *Betweenness Centrality*. Cores quentes (Vermelho/Laranja) indicam alta intermediação; cores frias (Azul) indicam baixa intermediação.
+
+**Interpretação Teórica:**
+Em redes de informação como a Wikipedia, observamos frequentemente uma distribuição de lei de potência (*scale-free*), onde poucos nós possuem muitas conexões (Hubs) e a maioria possui poucas. Além disso, a métrica de *Betweenness* revela os "controladores de fluxo" da informação.
+
+**Análise dos Resultados:**
+Observando a Figura 1, destacam-se os seguintes pontos:
+
+1.  **Hubs (Grandes):** Os nós de maior tamanho correspondem, como esperado, às sementes iniciais e aos termos generalistas. Identificamos **[Revolução Francesa e Existencialismo]** como um dos maiores hubs da rede.
+2.  **Pontes:** Nosso gráfo não apresentou nós com tamanho médio e alto valor de betweenness, que serviriam de pontes entre os assuntos. Como podemos ver também, os Hubs são os que apresentam uma coloração mais avermelhada/alaranjada, indicando uma centralidade e dependências deles, portanto, você é obrigado a passar pelas páginas principais (os Hubs). Não existem "atalhos" ou caminhos alternativos através de páginas menores.
+3.  **Hubs Locais (Grandes/Azuis):** Alguns nós são grandes, mas de cor fria. Isso indica que são muito importantes dentro de seu próprio tema, mas irrelevantes para a conectividade global da rede.
+
+<p align="center">
+  <img src="https://github.com/ariadnec-es/AnaliseRedesComplexas/blob/main/images/btweencentrality.png" alt="Centralidade" width="90%">
+</p
+
+### 7.2 Robustez e Hierarquia (K-Core Decomposition)
+
+**Metodologia Visual:**
+Utilizamos o filtro de *K-Core* para decompor a rede em camadas, similar a uma cebola.
+* **K-Shells (Periferia/Azul):** Camadas externas com poucos links recíprocos.
+* **K-Core Máximo (Núcleo/Vermelho):** O subgrafo mais denso da rede, onde todos os nós se conectam a pelo menos $k$ outros nós do mesmo grupo.
+
+**Análise dos Resultados:**
+A Figura 2 destaca o "núcleo duro" da rede (em destaque/vermelho).
+Ao filtrar a rede, observamos que o núcleo é composto majoritariamente pelo tópico de **[Buraco Negro]**.
+
+Isso demonstra que esse assunto possui uma base de conhecimento mais interconectada e recursiva. Em contraste, tópicos como **[Renascença e Existencialismo]** tendem a ficar na periferia (K-Shells baixos), pois citam muitos fatos, mas são pouco citados reciprocamente fora de seu contexto imediato.
+
+<p align="center">
+  <img src="https://github.com/ariadnec-es/AnaliseRedesComplexas/blob/main/images/kcoredecomp.png" alt="K-core" width="90%">
+</p
+
+## 8.3 Detecção de Comunidades (Modularidade)
+
+**Metodologia Visual:**
+Aplicamos o algoritmo de *Louvain* para cálculo de Modularidade.
+* **Cores:** Cada cor distinta (Partition) representa uma classe de modularidade (Comunidade), ou seja, um grupo de páginas que se linkam mais entre si do que com o resto da rede.
+
+**Análise dos Resultados:**
+A Figura 3 revela uma formação com mais de 40 comunidades, portanto relvemos mostrar só as **[10]** maiores comunidades bem definidas. A segmentação visual valida a escolha das sementes iniciais, pois observamos clusters temáticos claros:
+
+* **Comunidade [Amarelo]:** Agrupa tópicos relacionados a **[Revolução Francesa]**, mostrando ligações entre militares franceses como *Jean-de-Dieu Soult*, *Emmanuel de Grouchy*, entre outros. Assuntos políticos também estão no meio, como exemplo *Termidorianos* e *Descristianização da França*.
+* **Comunidade [Lilás]:** Agrupa tópicos relacionados a **[Arte Renascentista]**, destacando movimentos artisticos como *Expressionismo Abstrato* e *Hyperrealism*. Além de escolas de arte, entre elas a *Hudson River School* e *Film Noir*.
+* **Comunidade [Laranja]:** Agrupa tópicos relacionados a **[Inteligencia Artificial]**, conseguimos encontrar topicos relacionados a tecnincas de aprendizagem de máquina, por exemplo *Funções de Perda* e *Aprendizado por Reforço*, tópicos tambem sobre segurança e ética, indicando que a rede também mapeia as discussões sobre segurança e o futuro da tecnologia, como *Statement On AI Risk Of Extinction* e *Existential Risk From Artificial General Intelligence*.
+
+As comunidades não possuem apenas conexões entre si, existem também nós que fazem parte de de conexões entre um ou mais grupos:
+
+*   O nó **[Buraco Negro]** serve como ponte para os comunidades **[Rosa e Verde]**, que abordam assuntos de *Física teórica e Astronomia / Leis fundamentais da gravidade*, respectivamente.
+*   O nó **[Existencialismo / Azul escuro], é um nó em comum para quatro comunidades diferentes, sendo as que mais se destacam [Azul/Verde Escuro]**, relacionados a assuntos de Filosofia da Mente, conectando movimentos e escolas filosóficas / Filosofia Aplicada, Ética e História das Ideias conectando conceitos morais, escolas históricas e campos interdisciplinares (como biologia e feminismo), respectivamente.
+
+<p align="center">
+  <img src="https://github.com/ariadnec-es/AnaliseRedesComplexas/blob/main/images/modularityclass.png" alt="Comunidades" width="90%">
+</p
 
 ---
 
-## 7. Materiais Adicionais
+## 8. Materiais Adicionais
 
 * **Notebook Colab:** [Acesse o código aqui!](https://colab.research.google.com/drive/19uU41FSju0OfrUMH-m1co90nEPOsd1aT?usp=sharing)
 
 * **Vídeo de Apresentação:** [Acesse o vídeo aqui!]()
+
+* As análises e visualizações interativas foram geradas pelo plugin **Sigma.js**, que permite explorar clusters individualmente. Disponível atravéz do link: [Wikipedia Network](https://arthurqueirozufrn.github.io/Teste-AED2/network/#)
+
 ---
