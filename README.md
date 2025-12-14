@@ -201,8 +201,7 @@ As métricas de **Betweenness** e **Eigenvector Centrality** foram essenciais pa
 
 ## 7. Materiais Adicionais
 
-* **Notebook Colab:** [Acesse o código aqui!](https://colab.research.google.com/drive/19uU41FSju0OfrUMH-m1co90nEPOsd1aT)
+* **Notebook Colab:** [Acesse o código aqui!](https://colab.research.google.com/drive/19uU41FSju0OfrUMH-m1co90nEPOsd1aT?usp=sharing)
 
-* **Vídeo de Apresentação:**  *(link a ser)*
-
+* **Vídeo de Apresentação:** [Acesse o vídeo aqui!]()
 ---
