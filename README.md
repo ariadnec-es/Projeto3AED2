@@ -13,9 +13,9 @@
 
 ## 1. Introdução
 
-Este trabalho aplica conceitos de **Análise de Redes Complexas (CNA)** para compreender a topologia do conhecimento na Wikipedia. O objetivo central é construir e analisar um grafo em que os **nós representam páginas (artigos)** e as **arestas representam os hiperlinks** entre elas, partindo de um conjunto de tópicos iniciais (*sementes*).
+Este trabalho aplica conceitos de **Análise de Redes Complexas (CNA)** para compreender a topologia do conhecimento na Wikipedia. O objetivo central é construir e analisar um grafo em que os **nós representam páginas (artigos)** e as **arestas os hiperlinks** entre elas, a partir de um conjunto de tópicos iniciais (*sementes*).
 
-O estudo aborda o desafio do crescimento exponencial das redes de informação. Para isso, foi implementado um *crawler* capaz de explorar a rede até **nível 2 de profundidade**, utilizando uma **heurística de amostragem** para garantir viabilidade computacional.
+O estudo aborda o desafio do crescimento exponencial das redes de informação. Para isso, foi implementado um *crawler* (robô de busca) capaz de explorar a rede até **nível 2 de profundidade**, utilizando uma **heurística de amostragem** para garantir viabilidade computacional.
 
 A partir da rede construída, foram calculadas métricas fundamentais de centralidade (**Grau, Intermediação, Proximidade e Autovetor**) e realizada a **decomposição estrutural K-Core**.
 
