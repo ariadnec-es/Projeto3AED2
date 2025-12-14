@@ -89,7 +89,6 @@ STOPS = set([
     "Bibcode"
 ])
 ````
-
 ---
 
 ## 4. Coleta e Construção da Rede
@@ -142,7 +141,6 @@ for u, v in duplicates:
     if g.has_node(u) and g.has_node(v):
         nx.contracted_nodes(g, u, v, self_loops=False)
 ```
-
 ---
 
 ## 5. Análise de Métricas e Resultados
