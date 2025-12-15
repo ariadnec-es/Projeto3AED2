@@ -361,7 +361,7 @@ As comunidades não possuem apenas conexões entre si, existem também nós que 
 
 * **Notebook Colab:** [Acesse o código aqui!](https://colab.research.google.com/drive/19uU41FSju0OfrUMH-m1co90nEPOsd1aT?usp=sharing)
 
-* **Vídeo de Apresentação:** [Acesse o vídeo aqui!]()
+* **Vídeo de Apresentação:** [Acesse o vídeo aqui!](https://youtu.be/eRms0kqsmuI)
 
 * As análises e visualizações interativas foram geradas pelo plugin **Sigma.js**, que permite explorar clusters individualmente. Disponível atravéz do link: [Wikipedia Network](https://ariadnec-es.github.io/AnaliseRedesComplexas/network/)
 
